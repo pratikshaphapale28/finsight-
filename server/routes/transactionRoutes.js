@@ -7,11 +7,13 @@ const {
   updateTransaction,
   deleteTransaction,
   bulkImportTransactions,
+  quickParseTransactions,
 } = require('../controllers/transactionController');
 const { protect } = require('../middleware/auth');
 
 router.use(protect); // All transaction routes are protected
 
+router.post('/quick-parse', quickParseTransactions);
 router.post('/import', bulkImportTransactions);
 
 router.route('/')

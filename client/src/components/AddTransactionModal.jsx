@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Modal from './Modal';
 import api from '../services/api';
 import { useToast } from '../context/ToastContext';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Sparkles } from 'lucide-react';
 
 const expenseCategories = [
   'Food',
@@ -26,7 +26,8 @@ const incomeCategories = [
 
 const paymentMethods = ['UPI', 'Card', 'Cash', 'Bank Transfer', 'Other'];
 
-const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
+const AddTransactionModal = ({ isOpen, onClose, onSuccess, onSwitchToQuickAdd }) => {
+
   const toast = useToast();
   const [type, setType] = useState('expense');
   const [amount, setAmount] = useState('');
@@ -95,6 +96,32 @@ const AddTransactionModal = ({ isOpen, onClose, onSuccess }) => {
       }
     >
       <form id="add-transaction-form" onSubmit={handleSubmit}>
+        {onSwitchToQuickAdd && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.85rem' }}>
+            <button
+              type="button"
+              onClick={onSwitchToQuickAdd}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                fontSize: '0.785rem',
+                fontWeight: 600,
+                color: 'var(--accent-primary)',
+                background: 'rgba(63, 191, 159, 0.12)',
+                border: '1px solid rgba(63, 191, 159, 0.25)',
+                padding: '0.35rem 0.75rem',
+                borderRadius: 'var(--radius-full)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Sparkles size={13} />
+              <span>Or use Smart Quick Entry (⚡)</span>
+            </button>
+          </div>
+        )}
+
         {/* Type Toggle Tabs */}
         <div
           style={{

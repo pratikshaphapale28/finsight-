@@ -14,6 +14,7 @@ import {
   Calendar,
   X,
   CreditCard,
+  Sparkles,
 } from 'lucide-react';
 
 const expenseCategories = ['Food', 'Transport', 'Shopping', 'Education', 'Bills', 'Entertainment', 'Healthcare', 'Other'];
@@ -29,7 +30,8 @@ const formatCurrency = (val) => {
 };
 
 const TransactionsPage = () => {
-  const { refreshTrigger, onOpenAddTransaction } = useOutletContext() || {};
+  const { refreshTrigger, onOpenAddTransaction, onOpenQuickAdd } = useOutletContext() || {};
+
   const toast = useToast();
 
   const [transactions, setTransactions] = useState([]);
@@ -173,10 +175,28 @@ const TransactionsPage = () => {
             </p>
           </div>
 
-          <button onClick={onOpenAddTransaction} className="btn btn-primary btn-sm">
-            <Plus size={16} /> Add Transaction
-          </button>
+          <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+            {onOpenQuickAdd && (
+              <button
+                type="button"
+                onClick={() => onOpenQuickAdd()}
+                className="btn btn-secondary btn-sm"
+                title="Smart Quick Add (Ctrl+K)"
+                style={{
+                  borderColor: 'rgba(63, 191, 159, 0.3)',
+                  color: 'var(--accent-primary)',
+                }}
+              >
+                <Sparkles size={15} />
+                <span>Smart Quick Add</span>
+              </button>
+            )}
+            <button onClick={onOpenAddTransaction} className="btn btn-primary btn-sm">
+              <Plus size={16} /> Add Transaction
+            </button>
+          </div>
         </div>
+
 
         {/* Filter Toolbar */}
         <div

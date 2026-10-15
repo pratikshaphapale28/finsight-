@@ -1,4 +1,6 @@
+const axios = require('axios');
 const Transaction = require('../models/Transaction');
+const { quickParse } = require('../utils/quickParser');
 
 // @desc    Get all transactions for logged in user (with filters)
 // @route   GET /api/transactions
@@ -232,6 +234,75 @@ const bulkImportTransactions = async (req, res, next) => {
   }
 };
 
+// @desc    Quick parse natural language transactions into preview candidates (read-only, does NOT save to DB)
+// @route   POST /api/transactions/quick-parse
+// @access  Private
+const quickParseTransactions = async (req, res, next) => {
+  try {
+    const { text, clientDate } = req.body;
+
+    if (!text || typeof text !== 'string' || !text.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide transaction text to parse.',
+        transactions: [],
+      });
+    }
+
+    const refDate = clientDate ? new Date(clientDate) : new Date();
+    const parsedCandidates = quickParse(text, isNaN(refDate.getTime()) ? new Date() : refDate);
+
+    if (!parsedCandidates || parsedCandidates.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        transactions: [],
+        message: 'No transaction entries could be identified from the input.',
+      });
+    }
+
+    // Optional FastAPI enrichment for items with lower confidence
+    const mlServiceUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:8000';
+    const enrichedCandidates = await Promise.all(
+      parsedCandidates.map(async (item) => {
+        if (item.confidence >= 0.85) return item;
+
+        try {
+          const mlRes = await axios.post(
+            `${mlServiceUrl}/categorize`,
+            { text: item.rawInput },
+            { timeout: 1500 }
+          );
+
+          if (mlRes.data && mlRes.data.category && mlRes.data.confidence > item.confidence) {
+            return {
+              ...item,
+              category: mlRes.data.category,
+              type: mlRes.data.transaction_type || item.type,
+              confidence: mlRes.data.confidence,
+              confidenceLevel: mlRes.data.confidence >= 0.85 ? 'high' : (mlRes.data.confidence >= 0.60 ? 'medium' : 'low'),
+              isLowConfidence: mlRes.data.confidence < 0.60,
+              reason: mlRes.data.confidence < 0.60 ? item.reason : '',
+            };
+          }
+        } catch (mlErr) {
+          // Graceful fallback to rule-based parser without failing
+        }
+
+        return item;
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      count: enrichedCandidates.length,
+      transactions: enrichedCandidates,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getTransactions,
   getTransactionById,
@@ -239,4 +310,6 @@ module.exports = {
   updateTransaction,
   deleteTransaction,
   bulkImportTransactions,
+  quickParseTransactions,
 };
+

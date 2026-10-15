@@ -34,3 +34,13 @@ class PredictionResponse(BaseModel):
     requiredMonths: int = 3
     trend: Optional[str] = None
     details: Optional[Dict[str, Any]] = None
+
+class CategorizeRequest(BaseModel):
+    text: str = Field(..., description="Transaction statement text to classify")
+
+class CategorizeResponse(BaseModel):
+    category: str
+    confidence: float
+    transaction_type: str = "expense"
+    suggested_description: Optional[str] = None
+

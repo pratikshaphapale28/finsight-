@@ -76,6 +76,55 @@ def predict_expense(request: PredictionRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction pipeline error: {str(e)}")
 
+CATEGORY_MAP = {
+    "Food": ["chai", "tea", "coffee", "lunch", "dinner", "breakfast", "swiggy", "zomato", "grocery", "groceries", "restaurant", "cafe", "snack", "zepto", "blinkit", "instamart"],
+    "Transport": ["auto", "cab", "uber", "ola", "rapido", "metro", "bus", "train", "petrol", "fuel", "diesel", "toll", "fastag"],
+    "Bills": ["electricity", "power", "water", "gas", "wifi", "broadband", "airtel", "jio", "bill", "recharge", "rent"],
+    "Shopping": ["amazon", "flipkart", "myntra", "clothes", "shoes", "electronics", "laptop", "mobile", "shopping", "retail"],
+    "Entertainment": ["movie", "cinema", "pvr", "inox", "netflix", "spotify", "hotstar", "game", "concert"],
+    "Healthcare": ["doctor", "medicine", "pharmacy", "hospital", "clinic", "dental", "apollo", "test"],
+    "Education": ["course", "book", "tuition", "school", "college", "udemy", "exam", "fees"],
+    "Salary": ["salary", "payroll", "stipend"],
+    "Freelance": ["freelance", "gig", "contract"],
+    "Investment": ["dividend", "mutual fund", "sip", "stock", "interest"],
+    "Allowance": ["pocket money", "allowance"],
+    "Gift": ["gift", "cashback", "reward"]
+}
+
+INCOME_WORDS = ["salary", "payroll", "stipend", "credited", "freelance", "dividend", "interest", "bonus", "pocket money", "allowance", "cashback", "refund", "gift", "received"]
+
+@app.post("/categorize")
+def categorize_text(req: dict):
+    """
+    NLP/heuristic categorization endpoint for quick transaction entry.
+    """
+    text = (req.get("text") or "").lower()
+    tx_type = "expense"
+    for inc in INCOME_WORDS:
+        if inc in text:
+            tx_type = "income"
+            break
+            
+    best_cat = "Salary" if tx_type == "income" else "Other"
+    best_conf = 0.45
+    
+    for cat, kws in CATEGORY_MAP.items():
+        for kw in kws:
+            if kw in text:
+                best_cat = cat
+                best_conf = 0.95
+                break
+        if best_conf >= 0.90:
+            break
+            
+    return {
+        "category": best_cat,
+        "confidence": best_conf,
+        "transaction_type": tx_type,
+        "suggested_description": req.get("text", "").strip()
+    }
+
 if __name__ == "__main__":
+
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
